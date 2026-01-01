@@ -10,20 +10,29 @@ class Validator
 {
     private array $errors = [];
 
+    /**
+     * @param int $maxSize Taille maximum en octets.
+     * @param MimeTypeConstraint $mimeConstraint L'objet gérant la vérification du type MIME.
+     */
     public function __construct(
-        private int $maxSize, // Taille en octets
-        private array $allowedMimeTypes = [] // Ex: ['image/jpeg', 'image/png']
+        private int $maxSize,
+        private MimeTypeConstraint $mimeConstraint
     ) {}
 
     /**
-     * Valide le fichier selon les règles définies.
+     * Valide le fichier selon les règles.
      */
     public function validate(UploadedFileInterface $file): bool
     {
-        $this->errors = []; // Reset des erreurs
+        $this->errors = []; // Reset pour chaque validation
 
+        // 1. Validation de la taille
         $this->validateSize($file);
-        $this->validateMimeType($file);
+
+        // 2. Validation du type MIME via la contrainte dédiée
+        if (!$this->mimeConstraint->isValid($file)) {
+            $this->errors[] = "Le type de fichier n'est pas autorisé ou est malveillant.";
+        }
 
         return empty($this->errors);
     }
@@ -34,46 +43,14 @@ class Validator
     private function validateSize(UploadedFileInterface $file): void
     {
         if ($file->getSize() > $this->maxSize) {
-            $this->errors[] = "Le fichier est trop volumineux (max: " . ($this->maxSize / 1024 / 1024) . " Mo).";
+            $maxMo = round($this->maxSize / 1024 / 1024, 2);
+            $this->errors[] = "Le fichier est trop volumineux (max: {$maxMo} Mo).";
         }
     }
 
     /**
-     * Vérifie le contenu réel du fichier (MIME Type).
+     * Récupère la liste des erreurs.
      */
-    private function validateMimeType(UploadedFileInterface $file): void
-    {
-        if (empty($this->allowedMimeTypes)) {
-            return;
-        }
-
-        // Récupération sécurisée du type MIME réel
-        $realMimeType = $this->detectRealMimeType($file);
-
-        if (!in_array($realMimeType, $this->allowedMimeTypes, true)) {
-            $this->errors[] = "Type de fichier non autorisé : $realMimeType.";
-        }
-    }
-
-    /**
-     * Utilise finfo pour lire le contenu réel du fichier.
-     */
-    private function detectRealMimeType(UploadedFileInterface $file): string
-    {
-        // Pour PSR-7, on récupère le flux temporaire
-        $stream = $file->getStream();
-        $uri = $stream->getMetadata('uri');
-
-        if (empty($uri)) {
-            // Si l'URI n'est pas disponible, on se rabat sur l'info fournie par le client
-            // (moins sécurisé, mais nécessaire pour certains environnements de test)
-            return $file->getClientMediaType() ?? 'application/octet-stream';
-        }
-
-        $finfo = new \finfo(FILEINFO_MIME_TYPE);
-        return $finfo->file($uri) ?: 'application/octet-stream';
-    }
-
     public function getErrors(): array
     {
         return $this->errors;
