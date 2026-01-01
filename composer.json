@@ -3,6 +3,13 @@
     "description": "Une bibliothèque PHP 8 sécurisée pour l'upload de fichiers via PSR-7.",
     "type": "library",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "MOLENGO MALANDA FORDI",
+            "email": "fordimalanda7@gmail.com",
+            "role": "Developer"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "SfUpload\\": "src/"
