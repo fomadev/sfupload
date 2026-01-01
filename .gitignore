@@ -1,3 +1,29 @@
-txt
+# --- Dépendances ---
+/vendor/
 
-vendor/
+# --- IDE (Éditeurs de code) ---
+.idea/
+.vscode/
+*.swp
+*.sublime-project
+*.sublime-workspace
+
+# --- Système d'exploitation ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- Tests et Qualité ---
+/.phpunit.result.cache
+/tests/_output/
+/coverage/
+
+# --- Dossier d'Upload (IMPORTANT) ---
+# On veut garder le dossier pour les tests, mais pas les images uploadées
+/examples/uploads/*
+!/examples/uploads/.gitkeep
+
+# --- Fichiers de configuration locaux ---
+.env
+.env.local
