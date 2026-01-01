@@ -15,13 +15,27 @@ class LocalStorage
     public function __construct(
         private string $uploadPath
     ) {
-        // On s'assure que le dossier existe et est accessible en écriture dès le départ
-        if (!is_dir($this->uploadPath) || !is_writable($this->uploadPath)) {
-            throw new UploadException("Le dossier de destination n'est pas valide ou n'a pas les permissions d'écriture.");
+        // 1. On vérifie si le dossier existe, sinon on tente de le créer (optionnel mais pratique)
+        if (!is_dir($this->uploadPath)) {
+            throw new UploadException("Le dossier de destination n'existe pas : {$this->uploadPath}");
+        }
+
+        // 2. On s'assure que le dossier est accessible en écriture
+        if (!is_writable($this->uploadPath)) {
+            throw new UploadException("Le dossier de destination n'a pas les permissions d'écriture.");
         }
         
-        // Nettoyage du chemin (retrait du slash final s'il existe)
+        // 3. Nettoyage du chemin (retrait du slash final s'il existe)
         $this->uploadPath = rtrim($this->uploadPath, DIRECTORY_SEPARATOR);
+    }
+
+    /**
+     * Retourne le chemin du dossier d'upload.
+     * Cette méthode est utilisée par la classe Uploader.
+     */
+    public function getUploadPath(): string
+    {
+        return $this->uploadPath;
     }
 
     /**
@@ -33,29 +47,28 @@ class LocalStorage
         $targetPath = $this->uploadPath . DIRECTORY_SEPARATOR . $safeName;
 
         try {
-            // Méthode standard PSR-7 pour déplacer le fichier
+            // Déplacement du fichier temporaire vers la destination finale
             $file->moveTo($targetPath);
         } catch (\Exception $e) {
-            throw new UploadException("Impossible de déplacer le fichier vers sa destination finale : " . $e->getMessage());
+            throw new UploadException("Erreur lors du déplacement du fichier : " . $e->getMessage());
         }
 
         return $safeName;
     }
 
     /**
-     * Génère un nom unique et imprévisible.
+     * Génère un nom unique, aléatoire et imprévisible.
      */
     private function generateSecureName(UploadedFileInterface $file): string
     {
-        // On récupère l'extension d'origine proprement
-        $originalName = $file->getClientFilename() ?? 'file.bin';
-        $extension = pathinfo($originalName, PATHINFO_EXTENSION);
-        $extension = strtolower($extension);
+        // On extrait l'extension à partir du nom d'origine
+        $originalName = $file->getClientFilename() ?? '';
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-        // Génération d'un hash aléatoire (32 caractères)
+        // Génération d'un jeton aléatoire de 32 caractères (16 bytes)
         $randomHash = bin2hex(random_bytes(16));
 
-        // On retourne le nom : hash.extension (ex: a1b2c3d4...jpg)
+        // Retourne : hash.extension ou juste le hash s'il n'y a pas d'extension
         return $randomHash . ($extension ? '.' . $extension : '');
     }
 }
