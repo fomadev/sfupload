@@ -12,30 +12,23 @@ use SfUpload\Bridge\UploadedFileAdapter;
 use SfUpload\Utility\FileHelper;
 use SfUpload\Exception\UploadException;
 
-// Configuration
 $uploadDir = __DIR__ . '/uploads';
-if (!is_dir($uploadDir)) {
-    mkdir($uploadDir, 0777, true);
-}
-
 $message = '';
 $status = '';
 $fileInfo = null;
+$uploadedFiles = [];
 
-// Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     try {
-        // Configuration simple
-        $storage = new LocalStorage($uploadDir);
-        $mimeConstraint = new MimeTypeConstraint(['image/jpeg', 'image/png', 'application/pdf']);
-        $validator = new Validator(maxSize: 5 * 1024 * 1024, mimeConstraint: $mimeConstraint);
+        // Configuration avec FileHelper pour afficher les infos
+        $storage = new LocalStorage($uploadDir, true);
+        $mimeConstraint = new MimeTypeConstraint(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+        $validator = new Validator(5 * 1024 * 1024, $mimeConstraint);
         $uploader = new Uploader($storage, $validator);
 
-        // Conversion des $_FILES en PSR-7 (helper simple)
         $psr7File = UploadedFileAdapter::fromGlobal($_FILES['file']);
-        
-        // Upload sécurisé
         $fileInfo = $uploader->upload($psr7File);
+
         $status = 'success';
         $message = "✅ Fichier uploadé avec succès !";
 
@@ -48,8 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file'])) {
     }
 }
 
-// Récupération des fichiers existants avec statistiques
-$uploadedFiles = [];
+// Récupération des fichiers avec statistiques
 if (is_dir($uploadDir)) {
     $files = array_filter(scandir($uploadDir), fn($f) => !in_array($f, ['.', '..']));
     usort($files, fn($a, $b) => filemtime($uploadDir . '/' . $b) <=> filemtime($uploadDir . '/' . $a));
@@ -68,11 +60,11 @@ if (is_dir($uploadDir)) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SfUpload - Gestionnaire de fichiers</title>
+    <title>SfUpload - Exemple Simple</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
@@ -82,34 +74,26 @@ if (is_dir($uploadDir)) {
         }
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 700px;
             background: white;
             border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
+            overflow: hidden;
         }
         .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
             text-align: center;
-            margin-bottom: 30px;
         }
-        .header h1 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 8px;
-        }
-        .header p {
-            color: #666;
-            font-size: 14px;
-        }
+        .header h1 { font-size: 32px; margin-bottom: 8px; }
+        .header p { font-size: 14px; opacity: 0.9; }
+        .content { padding: 40px; }
         .alert {
             padding: 16px;
             border-radius: 8px;
             margin-bottom: 24px;
             animation: slideIn 0.3s ease-out;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         .alert.success {
             background: #d4edda;
@@ -121,19 +105,12 @@ if (is_dir($uploadDir)) {
             border: 1px solid #f5c6cb;
             color: #721c24;
         }
-        .form-group {
-            margin-bottom: 24px;
-        }
+        .form-group { margin-bottom: 24px; }
         .form-group label {
             display: block;
             margin-bottom: 10px;
             font-weight: 600;
             color: #333;
-            font-size: 14px;
-        }
-        .file-input-wrapper {
-            position: relative;
-            display: block;
         }
         .file-input-label {
             display: flex;
@@ -151,11 +128,8 @@ if (is_dir($uploadDir)) {
         .file-input-label:hover {
             background: #f0f2ff;
             border-color: #764ba2;
-            color: #764ba2;
         }
-        input[type="file"] {
-            display: none;
-        }
+        input[type="file"] { display: none; }
         .btn {
             width: 100%;
             padding: 14px;
@@ -164,29 +138,13 @@ if (is_dir($uploadDir)) {
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .btn-primary {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
+            transition: all 0.3s ease;
         }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        }
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-        .file-list {
-            margin-top: 40px;
-            padding-top: 30px;
-            border-top: 2px solid #f0f0f0;
-        }
-        .file-list h3 {
-            color: #333;
-            font-size: 16px;
-            margin-bottom: 16px;
-        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4); }
+        .file-list { margin-top: 30px; padding-top: 30px; border-top: 2px solid #f0f0f0; }
+        .file-list h3 { color: #333; margin-bottom: 16px; }
         .file-item {
             display: flex;
             justify-content: space-between;
@@ -197,82 +155,61 @@ if (is_dir($uploadDir)) {
             margin-bottom: 10px;
             font-size: 14px;
         }
-        .file-item-name {
-            color: #667eea;
-            font-weight: 500;
-            word-break: break-word;
-            flex: 1;
+        .file-name { color: #667eea; font-weight: 500; flex: 1; }
+        .file-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-left: 8px;
         }
-        .file-item-date {
-            color: #999;
-            font-size: 12px;
-            margin-left: 10px;
-            white-space: nowrap;
-        }
-        .empty-state {
-            text-align: center;
-            color: #999;
-            padding: 20px;
-            font-size: 14px;
-        }
-        .info-box {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: #666;
-            margin-top: 16px;
-        }
+        .file-size { color: #999; margin-left: 10px; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
         <h1>🛡️ sfUpload</h1>
-        <p>Téléchargez vos fichiers de manière sécurisée</p>
+        <p>Téléchargez vos fichiers en sécurité (Images et PDF)</p>
     </div>
 
-    <?php if ($message): ?>
-        <div class="alert <?= $status ?>">
-            <?= $message ?>
-            <?php if ($fileInfo && $status === 'success'): ?>
-                <br><small>📄 <?= htmlspecialchars($fileInfo->originalName) ?> → <?= htmlspecialchars($fileInfo->savedName) ?></small>
-            <?php endif; ?>
-        </div>
-    <?php endif; ?>
+    <div class="content">
+        <?php if ($message): ?>
+            <div class="alert <?= $status ?>">
+                <?= htmlspecialchars($message) ?>
+                <?php if ($fileInfo && $status === 'success'): ?>
+                    <br><small>📄 <?= htmlspecialchars($fileInfo->originalName) ?> (<?= $fileInfo->getFormattedSize() ?>)</small>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
-    <form method="POST" enctype="multipart/form-data">
-        <div class="form-group">
-            <label>Sélectionner un fichier</label>
-            <div class="file-input-wrapper">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Sélectionner un fichier</label>
                 <label class="file-input-label" for="file">
-                    📁 Cliquez ou déposez votre fichier ici
+                    📁 Cliquez ou déposez votre fichier
                 </label>
-                <input type="file" id="file" name="file" required accept=".jpg,.jpeg,.png,.pdf">
+                <input type="file" id="file" name="file" required accept="image/*,.pdf">
             </div>
-            <div class="info-box">
-                ✓ Formats acceptés: JPG, PNG, PDF | Max: 5 Mo
+            <button type="submit" class="btn">Télécharger</button>
+        </form>
+
+        <?php if (!empty($uploadedFiles)): ?>
+            <div class="file-list">
+                <h3>📂 Fichiers récents (<?= count($uploadedFiles) ?>)</h3>
+                <?php foreach ($uploadedFiles as $file): ?>
+                    <div class="file-item">
+                        <span class="file-name"><?= htmlspecialchars($file['name']) ?></span>
+                        <span class="file-badge"><?= $file['type'] ?></span>
+                        <span class="file-size"><?= $file['stats']['size_formatted'] ?? 'N/A' ?></span>
+                    </div>
+                <?php endforeach; ?>
             </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Télécharger</button>
-    </form>
-
-    <?php if (!empty($uploadedFiles)): ?>
-        <div class="file-list">
-            <h3>📂 Fichiers uploadés (<?= count($uploadedFiles) ?>)</h3>
-            <?php foreach (array_slice($uploadedFiles, 0, 10) as $file): ?>
-                <div class="file-item">
-                    <span class="file-item-name">
-                        📄 <?= htmlspecialchars($file['name']) ?> 
-                        <small class="file-item-type"><?= htmlspecialchars($file['type']) ?></small>
-                    </span>
-                    <span class="file-item-size"><?= FileHelper::formatFileSize($file['stats']['size'] ?? 0) ?></span>
-                    <span class="file-item-date"><?= date('d/m H:i', $file['stats']['mtime'] ?? time()) ?></span>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+        <?php endif; ?>
+    </div>
 </div>
 
 <script>
@@ -280,14 +217,13 @@ if (is_dir($uploadDir)) {
     const fileLabel = document.querySelector('.file-input-label');
     
     fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            fileLabel.textContent = `✓ ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} Mo)`;
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            fileLabel.textContent = `✓ ${file.name}`;
             fileLabel.style.color = '#28a745';
         }
     });
     
-    // Drag & drop
     fileLabel.addEventListener('dragover', (e) => {
         e.preventDefault();
         fileLabel.style.background = '#e8f5e9';
@@ -298,8 +234,7 @@ if (is_dir($uploadDir)) {
     fileLabel.addEventListener('drop', (e) => {
         e.preventDefault();
         fileInput.files = e.dataTransfer.files;
-        const event = new Event('change', { bubbles: true });
-        fileInput.dispatchEvent(event);
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
         fileLabel.style.background = '#f8f9ff';
     });
 </script>
