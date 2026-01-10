@@ -11,13 +11,19 @@ class LocalStorage
 {
     /**
      * @param string $uploadPath Le chemin absolu vers le dossier de stockage
+     * @param bool $createIfMissing Créer le dossier s'il n'existe pas
      */
     public function __construct(
-        private string $uploadPath
+        private string $uploadPath,
+        private bool $createIfMissing = false
     ) {
-        // 1. On vérifie si le dossier existe, sinon on tente de le créer (optionnel mais pratique)
+        // 1. On vérifie si le dossier existe
         if (!is_dir($this->uploadPath)) {
-            throw new UploadException("Le dossier de destination n'existe pas : {$this->uploadPath}");
+            if ($this->createIfMissing) {
+                @mkdir($this->uploadPath, 0755, true);
+            } else {
+                throw new UploadException("Le dossier de destination n'existe pas : {$this->uploadPath}");
+            }
         }
 
         // 2. On s'assure que le dossier est accessible en écriture
