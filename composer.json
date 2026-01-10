@@ -1,8 +1,10 @@
 {
     "name": "fomadev/sfupload",
-    "description": "Une bibliothèque PHP 8 sécurisée pour l'upload de fichiers via PSR-7.",
+    "description": "Bibliothèque PHP 8.1+ sécurisée et légère pour l'upload de fichiers via PSR-7. Validation stricte, configuration flexible, zéro dépendance externe.",
     "type": "library",
+    "version": "1.2.0",
     "license": "MIT",
+    "keywords": ["upload", "file", "psr-7", "security", "php8", "validation"],
     "authors": [
         {
             "name": "MOLENGO MALANDA FORDI",
@@ -17,9 +19,10 @@
     },
     "require": {
         "php": ">=8.1",
-        "psr/http-message": "*"
+        "psr/http-message": "^1.0 || ^2.0"
     },
     "require-dev": {
         "phpunit/phpunit": "^10.0"
     }
 }
+
